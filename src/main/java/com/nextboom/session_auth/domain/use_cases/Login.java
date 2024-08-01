@@ -46,7 +46,7 @@ public class Login {
 
     Session session = Session.create(token, user.getId().toString(), requestInfo);
 
-    redisTemplate.opsForValue().set("session:" + token, user.getId().toString(), Duration.ofHours(1));
+    redisTemplate.opsForValue().set("session:" + token, user.getId().toString(), Duration.ofSeconds(Session.EXPIRE_TIME));
 
     Map<String, Object> sessionData = new HashMap<>();
     sessionData.put("userId", session.getUserId());
