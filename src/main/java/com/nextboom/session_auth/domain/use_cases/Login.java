@@ -2,7 +2,6 @@ package com.nextboom.session_auth.domain.use_cases;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +17,6 @@ import com.nextboom.session_auth.infra.redis.Session;
 import com.nextboom.session_auth.infra.repositories.UserRepository;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 
 @Service
 public class Login {
@@ -48,6 +44,8 @@ public class Login {
 
     redisTemplate.opsForValue().set("session:" + token, user.getId().toString(), Duration.ofSeconds(Session.EXPIRE_TIME));
 
+    this.addToSessionToUserSessions(user.getId().toString(), token);
+
     Map<String, Object> sessionData = new HashMap<>();
     sessionData.put("userId", session.getUserId());
     sessionData.put("ip", requestInfo.getIp());
@@ -62,51 +60,27 @@ public class Login {
   }
 
   private Boolean hasReachedSessionLimit(String userId) {
-    Set<String> keys = redisTemplate.keys("session:*");
-    int sessionCount = 0;
+    String userSessionListKey = "user_session_list:" + userId;
+    Long userSessionListSize = redisTemplate.opsForList().size(userSessionListKey);
 
-    if (keys != null) {
-      for (String key : keys) {
-        String value = redisTemplate.opsForValue().get(key);
-        if (userId.equals(value)) {
-          sessionCount++;
-        }
-      }
-    }
-    return sessionCount >= User.MAX_SESSIONS;
+    return userSessionListSize >= User.MAX_SESSIONS;
   }
 
   private void removeOldestSession(String userId) {
-    Set<String> keys = redisTemplate.keys("session:*");
-    String oldestSessionKey = null;
-    Long oldestSessionCreatedAt = Long.MAX_VALUE;
+    //TODO: ANALISAR POSSIBILIDADE DE SALVAR NO POSTGRES A LISTA DE SESSÕES APAGADAS
+    String userSessionListKey = "user_session_list:" + userId;
+    String oldestSessionToken = redisTemplate.opsForList().rightPop(userSessionListKey);
 
-    if (keys != null) {
-      for (String key : keys) {
-        String value = redisTemplate.opsForValue().get(key);
-        if (userId.equals(value)) {
-          String sessionDataKey = "session_data:" + key.substring(8);
-          String createdAt = (String) redisTemplate.opsForHash().get(sessionDataKey, "createdAt");
-
-          LocalDateTime createdAtDateTime = LocalDateTime.parse(createdAt, DateTimeFormatter.ISO_DATE_TIME);
-          Long createdAtLong = createdAtDateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
-
-          if (createdAtLong < oldestSessionCreatedAt) {
-            oldestSessionKey = key;
-            oldestSessionCreatedAt = createdAtLong;
-          }
-        }
-      }
-    }
-
-    if (oldestSessionKey != null) {
-      redisTemplate.delete(oldestSessionKey);
-      redisTemplate.delete("session_data:" + oldestSessionKey.substring(8));
-    }
+    redisTemplate.delete("session:" + oldestSessionToken);
   }
 
   private String generateToken() {
     String token = UUID.randomUUID().toString();
     return token;
+  }
+
+  private void addToSessionToUserSessions(String userId, String token) {
+    String userSessionListKey = "user_session_list:" + userId;
+    redisTemplate.opsForList().leftPush(userSessionListKey, token);
   }
 }

@@ -1,5 +1,7 @@
 package com.nextboom.session_auth.infra.http.resolvers;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -42,14 +44,20 @@ public class AuthenticatedArgumentResolver implements HandlerMethodArgumentResol
       throw new UnauthorizedException("Não autorizado");
     }
 
+    Map<Object, Object> sessionData = redisTemplate.opsForHash().entries(SESSION_DATA_PREFIX + token);
+    
+    if (sessionData == null) {
+      throw new UnauthorizedException("Não autorizado");
+    }
+
     return new Session(
       token,
-      redisTemplate.opsForHash().get(SESSION_DATA_PREFIX + token, "userId").toString(),
-      redisTemplate.opsForHash().get(SESSION_DATA_PREFIX + token, "createdAt").toString(),
-      redisTemplate.opsForHash().get(SESSION_DATA_PREFIX + token, "expiresAt").toString(),
-      redisTemplate.opsForHash().get(SESSION_DATA_PREFIX + token, "lastAccessAt").toString(),
-      redisTemplate.opsForHash().get(SESSION_DATA_PREFIX + token, "ip").toString(),
-      redisTemplate.opsForHash().get(SESSION_DATA_PREFIX + token, "userAgent").toString()
+      userId,
+      sessionData.get("createdAt").toString(),
+      sessionData.get("expiresAt").toString(),
+      sessionData.get("lastAccessAt").toString(),
+      sessionData.get("ip").toString(),
+      sessionData.get("userAgent").toString()
       );
   }
 }
