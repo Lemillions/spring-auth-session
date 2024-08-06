@@ -8,6 +8,7 @@ import com.nextboom.session_auth.infra.http.RequestInfo;
 
 public class Session {
   public static final int EXPIRE_TIME = 60 * 60 * 24 * 7; // 7 days
+  public static final String DATA_PREFIX = "session_data:";
   private String token;
   private String userId;
   private String createdAt;

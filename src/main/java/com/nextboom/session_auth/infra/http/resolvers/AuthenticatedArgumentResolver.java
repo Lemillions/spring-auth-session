@@ -21,43 +21,35 @@ public class AuthenticatedArgumentResolver implements HandlerMethodArgumentResol
   @Autowired
   private RedisTemplate<String, String> redisTemplate;
 
-  private static final String SESSION_PREFIX = "session:";
-  private static final String SESSION_DATA_PREFIX = "session_data:";
-
   @Override
   public boolean supportsParameter(MethodParameter parameter) {
     return parameter.hasMethodAnnotation(Authenticated.class);
   }
 
   @Override
-  public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
+  public Session resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
       NativeWebRequest webRequest, WebDataBinderFactory binderFactory) throws Exception {
     String authHeader = webRequest.getHeader("Authorization");
+
     if (authHeader == null || !authHeader.startsWith("Bearer ")) {
       throw new UnauthorizedException("Não autorizado");
     }
 
     String token = authHeader.substring(7);
-    String userId = redisTemplate.opsForValue().get(SESSION_PREFIX + token);
 
-    if (userId == null) {
-      throw new UnauthorizedException("Não autorizado");
-    }
+    Map<Object, Object> sessionData = redisTemplate.opsForHash().entries(Session.DATA_PREFIX + token);
 
-    Map<Object, Object> sessionData = redisTemplate.opsForHash().entries(SESSION_DATA_PREFIX + token);
-    
-    if (sessionData == null) {
+    if (sessionData == null || sessionData.isEmpty()) {
       throw new UnauthorizedException("Não autorizado");
     }
 
     return new Session(
-      token,
-      userId,
-      sessionData.get("createdAt").toString(),
-      sessionData.get("expiresAt").toString(),
-      sessionData.get("lastAccessAt").toString(),
-      sessionData.get("ip").toString(),
-      sessionData.get("userAgent").toString()
-      );
+        token,
+        sessionData.get("userId").toString(),
+        sessionData.get("createdAt").toString(),
+        sessionData.get("expiresAt").toString(),
+        sessionData.get("lastAccessAt").toString(),
+        sessionData.get("ip").toString(),
+        sessionData.get("userAgent").toString());
   }
 }

@@ -16,8 +16,6 @@ import com.nextboom.session_auth.infra.http.dtos.LoginDto;
 import com.nextboom.session_auth.infra.redis.Session;
 import com.nextboom.session_auth.infra.repositories.UserRepository;
 
-import java.time.Duration;
-
 @Service
 public class Login {
   @Autowired
@@ -41,8 +39,6 @@ public class Login {
     String token = generateToken();
 
     Session session = Session.create(token, user.getId().toString(), requestInfo);
-
-    redisTemplate.opsForValue().set("session:" + token, user.getId().toString(), Duration.ofSeconds(Session.EXPIRE_TIME));
 
     this.addToSessionToUserSessions(user.getId().toString(), token);
 
@@ -69,9 +65,8 @@ public class Login {
   private void removeOldestSession(String userId) {
     //TODO: ANALISAR POSSIBILIDADE DE SALVAR NO POSTGRES A LISTA DE SESSÕES APAGADAS
     String userSessionListKey = "user_session_list:" + userId;
-    String oldestSessionToken = redisTemplate.opsForList().rightPop(userSessionListKey);
-
-    redisTemplate.delete("session:" + oldestSessionToken);
+    String oldestSessionKey = redisTemplate.opsForList().rightPop(userSessionListKey);
+    redisTemplate.delete(Session.DATA_PREFIX + oldestSessionKey);
   }
 
   private String generateToken() {
