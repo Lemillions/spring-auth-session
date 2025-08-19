@@ -1,0 +1,62 @@
+[package]
+name = "spring-auth-session"
+version = "0.1.0"
+edition = "2021"
+description = "Session-based authentication system in Rust (port from Spring Boot)"
+authors = ["spring-auth-session contributors"]
+
+[dependencies]
+# Web framework
+axum = "0.7"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+hyper = { version = "1.0", features = ["full"] }
+
+# Async runtime
+tokio = { version = "1.0", features = ["full"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "migrate"] }
+
+# Redis
+redis = { version = "0.24", features = ["tokio-comp"] }
+
+# Password hashing
+argon2 = "0.5"
+
+# UUID
+uuid = { version = "1.0", features = ["v4", "serde"] }
+
+# Date/Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Validation
+validator = { version = "0.16", features = ["derive"] }
+regex = "1.0"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Configuration
+config = "0.13"
+dotenvy = "0.15"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# HTTP client (for testing)
+reqwest = { version = "0.11", features = ["json"], optional = true }
+
+[dev-dependencies]
+reqwest = { version = "0.11", features = ["json"] }
+tokio-test = "0.4"
+
+[features]
+default = []
+test-integration = ["reqwest"]
