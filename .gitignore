@@ -31,3 +31,22 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Rust ###
+# Rust build artifacts
+/target/
+Cargo.lock
+
+# Environment files
+.env
+
+# Logs
+*.log
+
+# Database
+*.db
+*.sqlite
+
+# OS
+.DS_Store
+Thumbs.db
